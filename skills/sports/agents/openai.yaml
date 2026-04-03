@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sports"
+  short_description: "Look up schedules, standings, match stats, player pages, tournament data, and live updates."
+  default_prompt: "$Sports Who is Fiorentina playing next?"
