@@ -1,0 +1,48 @@
+Keep language plain. Keep answers tight. No filler.
+
+Repository rules:
+
+- `sports` is a lookup tool for agents and scripts. It should expose primitives, not pretend to parse full intent.
+- Current public CLI surface:
+  - `search <query>`
+  - `list`
+  - `<sport>`
+  - `<sport> tournaments`
+  - `<sport> sections`
+  - `<sport> watch`
+  - `<sport> live-tournaments|categories|top-players` for football and basketball
+  - `event <event-id>`
+  - `event <event-id> sections`
+  - `event <event-id> section <name> ...`
+  - `event <event-id> tv`
+  - `event <event-id> tv-channel <channel-id>`
+  - `event <event-id> h2h-events`
+  - `event <event-id> watch`
+  - `team <team-id> next|last`
+  - `team <team-id> info|tournaments|players|media`
+  - `team <team-id> standings`
+  - `team <team-id> stats`
+  - `team <team-id> rankings`
+  - `team <team-id> top-players`
+  - `player <player-id> attributes|media|media-videos|last|seasons|career`
+  - `player <player-id> season-stats|season-ratings`
+  - `player <player-id> characteristics|national-team|tournaments`
+  - `player <player-id> season-heatmap|penalty-history`
+  - `player <player-id> shot-actions|shot-action-areas`
+  - `player <player-id> year-stats|featured-event`
+  - `tournament <tournament-id>`
+  - `tournament <tournament-id> sections`
+  - `tournament <tournament-id> section <name> ...`
+  - `tournament <tournament-id> seasons`
+  - `tournament <tournament-id> next|last`
+  - `tournament <tournament-id> round <n>`
+  - `tournament <tournament-id> scheduled`
+  - `trending`
+- Prefer small composable commands over one fake-smart command.
+- Trust SofaScore ordering. Filters narrow. They do not invent a new ranking unless there is a real product reason.
+- Keep `--json` output stable and normalized. Agents should not need a decoder ring after every patch.
+- Agent docs should lead with task, scope, and route order. Background comes later or not at all.
+- Keep doc headings and command tables stable. Agents scan by shape as much as by content.
+- `README.md` is the public quickstart. `skills/sports/references/*.md` are operator docs. Keep both honest when behavior changes.
+- When you confirm a new working event section or route pattern, update the matching sport doc.
+- Use Conventional Commits like `feat:`, `fix:`, `docs:`, `test:`.
