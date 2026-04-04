@@ -34,6 +34,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Switch to main
+        run: |
+          git fetch origin main
+          git switch -C main --track origin/main
+
       - name: Update Formula
         env:
           TAG: ${{ github.ref_name }}
@@ -42,9 +47,6 @@ jobs:
 
       - name: Commit Formula update
         run: |
-          git fetch origin main
-          git switch main
-          git pull --ff-only origin main
           git add Formula/sports.rb
           git diff --cached --quiet && exit 0
           git config user.name "github-actions[bot]"
