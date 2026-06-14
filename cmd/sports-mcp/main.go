@@ -47,7 +47,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	client := sofascoreapi.New("", nil)
+	client := sofascoreapi.New("")
 	server := mcpserver.New(client)
 
 	if *httpAddr != "" {

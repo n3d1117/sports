@@ -153,7 +153,7 @@ func TestHelperProcess(t *testing.T) {
 		t.Fatal("missing helper base URL")
 	}
 
-	server := mcpserver.New(sofascoreapi.New(baseURL, nil))
+	server := mcpserver.New(sofascoreapi.New(baseURL))
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)
 	}

@@ -13,7 +13,7 @@ import (
 
 func TestSearchNormalizesResults(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if got := r.Header.Get("User-Agent"); got != "SportsApp/1.0" {
+		if got := r.Header.Get("User-Agent"); !strings.Contains(got, "Chrome") {
 			t.Fatalf("unexpected user agent %q", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -21,7 +21,7 @@ func TestSearchNormalizesResults(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	results, err := client.Search(context.Background(), "fiorentina", 0)
 	if err != nil {
 		t.Fatalf("Search returned error: %v", err)
@@ -44,7 +44,7 @@ func TestSearchUsesPageParameter(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	if _, err := client.Search(context.Background(), "fiorentina", 2); err != nil {
 		t.Fatalf("Search returned error: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestSearchNormalizesTournamentCategoryFields(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	results, err := client.Search(context.Background(), "premier league", 0)
 	if err != nil {
 		t.Fatalf("Search returned error: %v", err)
@@ -77,7 +77,7 @@ func TestTeamEventsNormalizesResults(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.TeamEvents(context.Background(), 2693, "next", 10)
 	if err != nil {
 		t.Fatalf("TeamEvents returned error: %v", err)
@@ -110,7 +110,7 @@ func TestTeamEventsLastReturnsMostRecentFirst(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.TeamEvents(context.Background(), 2693, "last", 3)
 	if err != nil {
 		t.Fatalf("TeamEvents returned error: %v", err)
@@ -143,7 +143,7 @@ func TestTeamEventsNextFallsBackToLastNotStartedEventsOnNotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.TeamEvents(context.Background(), 206570, "next", 10)
 	if err != nil {
 		t.Fatalf("TeamEvents returned error: %v", err)
@@ -173,7 +173,7 @@ func TestTeamEventsNextFallsBackToLastNotStartedEventsOnEmptyResponse(t *testing
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.TeamEvents(context.Background(), 206570, "next", 10)
 	if err != nil {
 		t.Fatalf("TeamEvents returned error: %v", err)
@@ -203,7 +203,7 @@ func TestTeamEventsNextFallbackRespectsLimit(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.TeamEvents(context.Background(), 206570, "next", 1)
 	if err != nil {
 		t.Fatalf("TeamEvents returned error: %v", err)
@@ -219,7 +219,7 @@ func TestTeamEventsNextKeepsNotFoundForInvalidTeam(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	_, err := client.TeamEvents(context.Background(), 999999999, "next", 10)
 	if err == nil {
 		t.Fatal("expected error")
@@ -238,7 +238,7 @@ func TestEventNormalizesSummaryAndRawPayload(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	event, err := client.Event(context.Background(), 13981714)
 	if err != nil {
 		t.Fatalf("Event returned error: %v", err)
@@ -261,7 +261,7 @@ func TestSportsNormalizesEventCounts(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	sports, err := client.Sports(context.Background())
 	if err != nil {
 		t.Fatalf("Sports returned error: %v", err)
@@ -281,7 +281,7 @@ func TestSportEventsNormalizesScheduledEvents(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.SportEvents(context.Background(), "football", "2026-03-24", 10)
 	if err != nil {
 		t.Fatalf("SportEvents returned error: %v", err)
@@ -301,7 +301,7 @@ func TestSportScheduledTournamentsNormalizesGroups(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	tournaments, hasNextPage, err := client.SportScheduledTournaments(context.Background(), "football", "2026-03-24", 2)
 	if err != nil {
 		t.Fatalf("SportScheduledTournaments returned error: %v", err)
@@ -321,7 +321,7 @@ func TestDetectCountryAlpha2(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	alpha2, err := client.DetectCountryAlpha2(context.Background())
 	if err != nil {
 		t.Fatalf("DetectCountryAlpha2 returned error: %v", err)
@@ -341,7 +341,7 @@ func TestTournamentScheduledEventsNormalizesScheduledEvents(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.TournamentScheduledEvents(context.Background(), 696, "2026-03-24", 10)
 	if err != nil {
 		t.Fatalf("TournamentScheduledEvents returned error: %v", err)
@@ -364,7 +364,7 @@ func TestTrendingEventsPreservesFeedOrderAndRank(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	events, err := client.TrendingEvents(context.Background(), "DK", 0)
 	if err != nil {
 		t.Fatalf("TrendingEvents returned error: %v", err)
@@ -397,7 +397,7 @@ func TestSportSectionsDiscoversWorkingSections(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	client.now = func() time.Time {
 		return time.Date(2026, 3, 13, 12, 0, 0, 0, time.UTC)
 	}
@@ -432,7 +432,7 @@ func TestProbeEventSectionsDiscoversSupportedSections(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	sections, err := client.ProbeEventSections(context.Background(), 13981714)
 	if err != nil {
 		t.Fatalf("ProbeEventSections returned error: %v", err)
@@ -458,7 +458,7 @@ func TestProbeEventSectionsFallsBackToGetWhenHeadIsNotAllowed(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	sections, err := client.ProbeEventSections(context.Background(), 13981714)
 	if err != nil {
 		t.Fatalf("ProbeEventSections returned error: %v", err)
@@ -484,7 +484,7 @@ func TestProbeEventSectionsSkipsForbiddenAndServerErrorSections(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	sections, err := client.ProbeEventSections(context.Background(), 13981714)
 	if err != nil {
 		t.Fatalf("ProbeEventSections returned error: %v", err)
@@ -529,7 +529,7 @@ func TestSportSectionsSearchesWiderDateWindow(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	client.now = func() time.Time {
 		return time.Date(2026, 3, 13, 12, 0, 0, 0, time.UTC)
 	}
@@ -556,7 +556,7 @@ func TestEventSectionPreservesRawJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	payload, err := client.EventSection(context.Background(), 13981714, "best-players/summary")
 	if err != nil {
 		t.Fatalf("EventSection returned error: %v", err)
@@ -582,7 +582,7 @@ func TestTournamentNormalizesDetailAndSeasons(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 
 	tournament, err := client.Tournament(context.Background(), 17)
 	if err != nil {
@@ -631,7 +631,7 @@ func TestProbeTournamentSectionsDiscoversMixedScopeSections(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	sections, err := client.ProbeTournamentSections(context.Background(), 17, 76986)
 	if err != nil {
 		t.Fatalf("ProbeTournamentSections returned error: %v", err)
@@ -655,7 +655,7 @@ func TestTournamentSectionUsesScopeAwarePath(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	if _, err := client.TournamentSection(context.Background(), 17, 76986, "media"); err != nil {
 		t.Fatalf("TournamentSection media returned error: %v", err)
 	}
@@ -680,7 +680,7 @@ func TestTournamentEventsNormalizesNextRoundAndUnsupportedLast(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 
 	nextEvents, err := client.TournamentEvents(context.Background(), 17, 76986, "next", 0, "", 10)
 	if err != nil {
@@ -719,7 +719,7 @@ func TestEventTVChannelsUsesTVPath(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	raw, err := client.EventTVChannels(context.Background(), 14442088)
 	if err != nil {
 		t.Fatalf("EventTVChannels returned error: %v", err)
@@ -739,7 +739,7 @@ func TestEventTVChannelVotesUsesVotesPath(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	raw, err := client.EventTVChannelVotes(context.Background(), 263, 14442088)
 	if err != nil {
 		t.Fatalf("EventTVChannelVotes returned error: %v", err)
@@ -763,7 +763,7 @@ func TestEventH2HEventsUsesCustomID(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	result, err := client.EventH2HEvents(context.Background(), 14442088)
 	if err != nil {
 		t.Fatalf("EventH2HEvents returned error: %v", err)
@@ -787,7 +787,7 @@ func TestTeamStandingsUsesResolvedUniqueTournamentSeason(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	result, err := client.TeamStandings(context.Background(), 3419, 0)
 	if err != nil {
 		t.Fatalf("TeamStandings returned error: %v", err)
@@ -814,7 +814,7 @@ func TestPlayerAttributeOverviewsAndSportCategoriesPaths(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	attributes, err := client.PlayerAttributeOverviews(context.Background(), 829022)
 	if err != nil {
 		t.Fatalf("PlayerAttributeOverviews returned error: %v", err)
@@ -872,7 +872,7 @@ func TestPlayerRoutePaths(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	calls := []func() (json.RawMessage, error){
 		func() (json.RawMessage, error) { return client.PlayerMedia(context.Background(), 851284) },
 		func() (json.RawMessage, error) { return client.PlayerMediaVideos(context.Background(), 851284) },
@@ -933,7 +933,7 @@ func TestPlayerMediaVideosReturnsNotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New(server.URL, server.Client())
+	client := New(server.URL)
 	_, err := client.PlayerMediaVideos(context.Background(), 851284)
 	if err == nil {
 		t.Fatal("expected error")

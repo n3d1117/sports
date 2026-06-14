@@ -112,7 +112,7 @@ type TrendingCmd struct {
 
 func Run(args []string, stdout, stderr io.Writer) int {
 	app := &App{
-		Client:     sofascoreapi.New("", nil),
+		Client:     sofascoreapi.New(""),
 		Stdout:     stdout,
 		Stderr:     stderr,
 		Context:    context.Background(),

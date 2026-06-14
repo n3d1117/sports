@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/enetx/g"
+	"github.com/enetx/surf"
 )
 
 const defaultBaseURL = "https://www.sofascore.com/api/v1"
@@ -73,7 +75,7 @@ var candidateTournamentSections = []tournamentSectionCandidate{
 
 type Client struct {
 	baseURL    string
-	httpClient *http.Client
+	httpClient *surf.Client
 	now        func() time.Time
 }
 
@@ -215,13 +217,22 @@ func (e *HTTPStatusError) Error() string {
 	return fmt.Sprintf("request failed with HTTP %d for %s", e.StatusCode, e.URL)
 }
 
-func New(baseURL string, httpClient *http.Client) *Client {
+func New(baseURL string) *Client {
 	if strings.TrimSpace(baseURL) == "" {
 		baseURL = defaultBaseURL
 	}
-	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 15 * time.Second}
-	}
+	httpClient := surf.NewClient().
+		Builder().
+		Impersonate().Chrome().
+		Timeout(15 * time.Second).
+		SetHeaders(map[string]string{
+			"Accept":           "application/json",
+			"Referer":          "https://www.sofascore.com/",
+			"Origin":           "https://www.sofascore.com",
+			"X-Requested-With": "XMLHttpRequest",
+		}).
+		Build().
+		Unwrap()
 	return &Client{
 		baseURL:    strings.TrimRight(baseURL, "/"),
 		httpClient: httpClient,
@@ -1278,25 +1289,23 @@ func (c *Client) head(ctx context.Context, endpoint string) error {
 }
 
 func (c *Client) doRequest(ctx context.Context, method, endpoint string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, method, endpoint, nil)
-	if err != nil {
-		return nil, err
+	var req *surf.Request
+	if method == http.MethodHead {
+		req = c.httpClient.Head(g.String(endpoint))
+	} else {
+		req = c.httpClient.Get(g.String(endpoint))
 	}
 
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "SportsApp/1.0")
-	req.Header.Set("Referer", "https://www.sofascore.com/")
-	req.Header.Set("Origin", "https://www.sofascore.com")
-
-	res, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
+	result := req.WithContext(ctx).Do()
+	if result.IsErr() {
+		return nil, result.Err()
 	}
+	res := result.Ok()
 	defer res.Body.Close()
 
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
+	if !res.StatusCode.IsSuccess() {
 		return nil, &HTTPStatusError{
-			StatusCode: res.StatusCode,
+			StatusCode: int(res.StatusCode),
 			URL:        endpoint,
 		}
 	}
@@ -1305,12 +1314,12 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string) ([]byte
 		return nil, nil
 	}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
+	body := res.Body.Bytes()
+	if body.IsErr() {
+		return nil, body.Err()
 	}
 
-	return body, nil
+	return body.Ok(), nil
 }
 
 func (c *Client) probeEndpoint(ctx context.Context, endpoint string, method probeMethod) (bool, error) {
