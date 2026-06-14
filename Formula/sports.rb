@@ -1,8 +1,8 @@
 class Sports < Formula
   desc "CLI for sports data"
   homepage "https://github.com/n3d1117/sports"
-  url "https://github.com/n3d1117/sports/archive/refs/tags/v1.0.1.tar.gz"
-  sha256 "2703d3edca8b1ee5bc66ec9dfa6d7c2095d580ceeec8af2cec82f6fb9aaea9b8"
+  url "https://github.com/n3d1117/sports/archive/refs/tags/v1.0.2.tar.gz"
+  sha256 "239fead06507cd0b43056d140d24a8d6b68d258c527c2dac598c228fd7d41c19"
   license "MIT"
   head "https://github.com/n3d1117/sports.git", branch: "main"
 
