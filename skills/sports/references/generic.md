@@ -14,6 +14,7 @@ Use this file when the sport is unknown or the question is about command choice.
 - `--json`: force JSON or NDJSON
 - `search --id`: fastest name-to-id route
 - Exit codes: `2` invalid input, `3` upstream error, `4` not found
+- SofaScore requests use the Chrome 152 TLS/HTTP2 profile via `tls-client`.
 
 ## Fast route
 

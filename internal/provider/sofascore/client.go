@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -12,11 +13,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/enetx/g"
-	"github.com/enetx/surf"
+	fhttp "github.com/bogdanfinn/fhttp"
+	tlsclient "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 )
 
 const defaultBaseURL = "https://www.sofascore.com/api/v1"
+
+// Keep the User-Agent aligned with the TLS and HTTP/2 profile in New.
+const browserUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"
 
 var candidateEventSections = []string{
 	"statistics",
@@ -74,9 +79,10 @@ var candidateTournamentSections = []tournamentSectionCandidate{
 }
 
 type Client struct {
-	baseURL    string
-	httpClient *surf.Client
-	now        func() time.Time
+	baseURL       string
+	httpClient    tlsclient.HttpClient
+	httpClientErr error
+	now           func() time.Time
 }
 
 type SearchResult struct {
@@ -221,22 +227,16 @@ func New(baseURL string) *Client {
 	if strings.TrimSpace(baseURL) == "" {
 		baseURL = defaultBaseURL
 	}
-	httpClient := surf.NewClient().
-		Builder().
-		Impersonate().Chrome().
-		Timeout(15 * time.Second).
-		SetHeaders(map[string]string{
-			"Accept":           "application/json",
-			"Referer":          "https://www.sofascore.com/",
-			"Origin":           "https://www.sofascore.com",
-			"X-Requested-With": "XMLHttpRequest",
-		}).
-		Build().
-		Unwrap()
+	httpClient, err := tlsclient.NewHttpClient(tlsclient.NewNoopLogger(),
+		tlsclient.WithClientProfile(profiles.Chrome_152),
+		tlsclient.WithTimeoutSeconds(15),
+		tlsclient.WithRandomTLSExtensionOrder(),
+	)
 	return &Client{
-		baseURL:    strings.TrimRight(baseURL, "/"),
-		httpClient: httpClient,
-		now:        time.Now,
+		baseURL:       strings.TrimRight(baseURL, "/"),
+		httpClient:    httpClient,
+		httpClientErr: err,
+		now:           time.Now,
 	}
 }
 
@@ -1289,37 +1289,40 @@ func (c *Client) head(ctx context.Context, endpoint string) error {
 }
 
 func (c *Client) doRequest(ctx context.Context, method, endpoint string) ([]byte, error) {
-	var req *surf.Request
-	if method == http.MethodHead {
-		req = c.httpClient.Head(g.String(endpoint))
-	} else {
-		req = c.httpClient.Get(g.String(endpoint))
+	if c.httpClientErr != nil {
+		return nil, c.httpClientErr
 	}
-
-	result := req.WithContext(ctx).Do()
-	if result.IsErr() {
-		return nil, result.Err()
+	req, err := fhttp.NewRequestWithContext(ctx, method, endpoint, nil)
+	if err != nil {
+		return nil, err
 	}
-	res := result.Ok()
+	req.Header = fhttp.Header{
+		"accept":           {"application/json"},
+		"user-agent":       {browserUserAgent},
+		"referer":          {"https://www.sofascore.com/"},
+		"origin":           {"https://www.sofascore.com"},
+		"x-requested-with": {"XMLHttpRequest"},
+		"sec-fetch-dest":   {"empty"},
+		"sec-fetch-mode":   {"cors"},
+		"sec-fetch-site":   {"same-origin"},
+		"accept-language":  {"en-US,en;q=0.9"},
+	}
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	defer res.Body.Close()
 
-	if !res.StatusCode.IsSuccess() {
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return nil, &HTTPStatusError{
-			StatusCode: int(res.StatusCode),
+			StatusCode: res.StatusCode,
 			URL:        endpoint,
 		}
 	}
-
 	if method == http.MethodHead {
 		return nil, nil
 	}
-
-	body := res.Body.Bytes()
-	if body.IsErr() {
-		return nil, body.Err()
-	}
-
-	return body.Ok(), nil
+	return io.ReadAll(res.Body)
 }
 
 func (c *Client) probeEndpoint(ctx context.Context, endpoint string, method probeMethod) (bool, error) {

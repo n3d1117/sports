@@ -4,6 +4,7 @@ Reliable sports data for humans and agents.
 
 - Current scope: football, basketball, tennis.
 - Current provider: SofaScore.
+- HTTP client: `tls-client` with a matching Chrome 152 TLS/HTTP2 profile and request headers.
 
 Use it for schedules, standings, match stats, player pages, tournament pages, live updates and so on.
 

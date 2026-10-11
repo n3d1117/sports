@@ -1,6 +1,7 @@
 package sofascoreapi
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -942,5 +943,52 @@ func TestPlayerMediaVideosReturnsNotFound(t *testing.T) {
 	var statusErr *HTTPStatusError
 	if !errors.As(err, &statusErr) || statusErr.StatusCode != http.StatusNotFound {
 		t.Fatalf("expected HTTP 404, got %v", err)
+	}
+}
+
+func TestSearchDecodesGzipResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Encoding", "gzip")
+		writer := gzip.NewWriter(w)
+		_, _ = writer.Write([]byte(`{"results":[]}`))
+		_ = writer.Close()
+	}))
+	defer server.Close()
+	results, err := New(server.URL).Search(context.Background(), "test", 0)
+	if err != nil {
+		t.Fatalf("Search failed to decode gzip: %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("unexpected results: %+v", results)
+	}
+}
+
+func TestRequestHonorsCanceledContext(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("canceled request reached the server")
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := New(server.URL).getRawJSON(ctx, server.URL)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected cancellation, got %v", err)
+	}
+}
+
+func TestRequestPreservesUpstreamStatus(t *testing.T) {
+	for _, status := range []int{http.StatusForbidden, http.StatusTooManyRequests, http.StatusServiceUnavailable} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(status)
+			}))
+			defer server.Close()
+			_, err := New(server.URL).getRawJSON(context.Background(), server.URL)
+			var statusErr *HTTPStatusError
+			if !errors.As(err, &statusErr) || statusErr.StatusCode != status || statusErr.URL != server.URL {
+				t.Fatalf("upstream status lost: %v", err)
+			}
+		})
 	}
 }
